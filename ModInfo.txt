@@ -1,0 +1,1 @@
+AggroOnHit makes enemies target the nearest player when they take damage. This stops enemies from just sitting there if you snipe them from off-screen.

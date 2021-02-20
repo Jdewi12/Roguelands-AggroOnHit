@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <ImportGroup>
+    <Import Project="GamePaths.xml" />
+  </ImportGroup>
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{b4b9734c-f827-43c2-a23e-db179b5f6b30}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AggroOnHit</RootNamespace>
+    <AssemblyName>AggroOnHit</AssemblyName>
+    <TargetFrameworks>net35</TargetFrameworks>
+    <FileAlignment>512</FileAlignment>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Configurations>Release</Configurations>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(GamePath)$(ManagedFolder)0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>$(GamePath)$(ManagedFolder)Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>true</SpecificVersion>
+    </Reference>
+    <Reference Include="GadgetCore">
+      <HintPath>$(GamePath)$(ManagedFolder)GadgetCore.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>$(GamePath)$(ManagedFolder)UnityEngine.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>true</SpecificVersion>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ModInfo.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Manifest.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <UsingTask TaskName="GetFileVersion" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <AssemblyPath ParameterType="System.String" Required="true" />
+      <Version ParameterType="System.String" Output="true" />
+      <TrimmedVersion ParameterType="System.String" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.Diagnostics" />
+      <Using Namespace="System.Text" />
+      <Using Namespace="System.Linq" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+      this.Version = FileVersionInfo.GetVersionInfo(this.AssemblyPath).FileVersion;  
+      this.TrimmedVersion = this.Version.Split('.').TakeWhile(x => !x.Equals("0")).Aggregate(new StringBuilder(), (a, b) => { if (a.Length > 0) a.Append("."); a.Append(b); return a; }).ToString();
+      if (this.TrimmedVersion.IndexOf('.') == -1) this.TrimmedVersion += ".0";
+    ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <GetFileVersion AssemblyPath="$(TargetPath)">
+      <Output TaskParameter="Version" PropertyName="ModFullVersion" />
+      <Output TaskParameter="TrimmedVersion" PropertyName="AssemblyFileVersion" />
+    </GetFileVersion>
+    <ItemGroup>
+      <OldZip Include="$(TargetDir)$(AssemblyName)_v*.zip" />
+      <OldDest Include="$(GamePath)GadgetCore\Mods\$(AssemblyName)_v*.zip" />
+    </ItemGroup>
+    <Delete Files="@(OldZip)" />
+    <Delete Files="@(OldDest)" />
+    <MakeDir Directories="$(TargetDir)..\BuildCache\" />
+    <ZipDirectory SourceDirectory="$(TargetDir)" DestinationFile="$(TargetDir)..\BuildCache\$(AssemblyName)_v$(AssemblyFileVersion).zip" />
+    <Copy SourceFiles="$(TargetDir)..\BuildCache\$(AssemblyName)_v$(AssemblyFileVersion).zip" DestinationFiles="$(TargetDir)$(AssemblyName)_v$(AssemblyFileVersion).zip" />
+    <RemoveDir Directories="$(TargetDir)..\BuildCache\" />
+    <MakeDir Directories="$(GamePath)GadgetCore\Mods\" />
+    <Copy SourceFiles="$(TargetDir)$(AssemblyName)_v$(AssemblyFileVersion).zip" DestinationFiles="$(GamePath)GadgetCore\Mods\$(AssemblyName)_v$(AssemblyFileVersion).zip" />
+    <Message Importance="High" Text="Mod Exported to $(GamePath)GadgetCore\Mods\$(AssemblyName)_v$(AssemblyFileVersion).zip" />
+  </Target>
+</Project>
